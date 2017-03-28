@@ -1,0 +1,18 @@
+<setup>
+        <block title="ASN Generator Configuration">
+		<text>Documentation: https://github.com/doksu/TA-asngen/wiki</text>
+        </block>
+
+	<block title="Proxy Settings" endpoint="configs/conf-asngen" entity="proxies">
+        	<text>Leave blank if not required.</text>
+		<input field="http">
+			<label>HTTP:</label>
+			<type>text</type>
+		</input>
+
+		<input field="https">
+			<label>HTTPS:</label>
+			<type>text</type>
+		</input>
+	</block>
+</setup>

@@ -55,7 +55,7 @@ class ASNGenCommand(GeneratingCommand):
             entries = re.findall(r'^(\d+),(\d+),\"AS(\d+) ([^\"]+)\"', zipfile.open(name).read(), re.MULTILINE)
 
         for line in entries:
-            diff = int(line[1]) - int(line[0])
+            diff = (int(line[1]) - int(line[0])) -1
             ip = socket.inet_ntoa(struct.pack('!L', int(line[0])))
 
             # there's almost certainly a more elegant way of doing this but it works

@@ -118,6 +118,6 @@ class ASNGenCommand(GeneratingCommand):
             elif diff<2**30:
                 mask = 2
 
-            yield {'ip': ip + "/" + str(mask), 'start': line[0], 'end': line[1], 'asn': line[2], 'autonomous_system': line[3]}
+            yield {'ip': ip + "/" + str(mask), 'start': line[0], 'end': line[1], 'asn': line[2], 'autonomous_system': line[3].decode('utf-8', 'ignore')}
 
 dispatch(ASNGenCommand, sys.argv, sys.stdin, sys.stdout, __name__)

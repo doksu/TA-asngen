@@ -6,7 +6,7 @@ import os
 import ConfigParser
 from StringIO import StringIO
 from zipfile import ZipFile
-from urllib import urlopen
+import urllib2
 import re
 import socket
 import struct
@@ -34,12 +34,12 @@ class ASNGenCommand(GeneratingCommand):
             pass
 
         if proxies['http'] is not None or proxies['https'] is not None:
-            proxy = ProxyHandler(proxies)
-            opener = build_opener(proxy)
-            install_opener(opener)
+            proxy = urllib2.ProxyHandler(proxies)
+            opener = urllib2.build_opener(proxy)
+            urllib2.install_opener(opener)
 
         try:
-            url = urlopen("https://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum2.zip")
+            url = urllib2.urlopen("https://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum2.zip")
         except:
             raise Exception("Please check app proxy settings")
 

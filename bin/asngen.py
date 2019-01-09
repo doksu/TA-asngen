@@ -23,9 +23,6 @@ class ASNGenCommand(GeneratingCommand):
             configparser.read(os.path.join(os.environ['SPLUNK_HOME'], 'etc/apps/TA-asngen/local/asngen.conf'))
 
             if configparser.has_section('proxies'):
-                if configparser.has_option('proxies', 'http'):
-                    if len(configparser.get('proxies', 'http')) > 0:
-                        proxies['http'] = configparser.get('proxies', 'http')
                 if configparser.has_option('proxies', 'https'):
                     if len(configparser.get('proxies', 'https')) > 0:
                         proxies['https'] = configparser.get('proxies', 'https')
@@ -33,7 +30,7 @@ class ASNGenCommand(GeneratingCommand):
         except:
             pass
 
-        if proxies['http'] is not None or proxies['https'] is not None:
+        if proxies['https'] is not None:
             proxy = urllib2.ProxyHandler(proxies)
             opener = urllib2.build_opener(proxy)
             urllib2.install_opener(opener)

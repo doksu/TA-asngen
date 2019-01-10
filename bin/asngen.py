@@ -49,7 +49,7 @@ class ASNGenCommand(GeneratingCommand):
             raise Exception("Received response: " + url.getcode())
 
         for name in zipfile.namelist():
-            entries = re.findall(r'^(\d+\.\d+\.\d+\.\d+)\/(\d+),(\d+),(.*)', zipfile.open(name).read(), re.MULTILINE)
+            entries = re.findall(r'^(\d+\.\d+\.\d+\.\d+)\/(\d+),(\d+),\"?([^\"\n]+)\"?', zipfile.open(name).read(), re.MULTILINE)
 
         for line in entries:
             yield {'ip': line[0] + "/" + line[1], 'asn': line[2], 'autonomous_system': line[3].decode('utf-8', 'ignore')}

@@ -50,8 +50,7 @@ class ASNGenCommand(GeneratingCommand):
 
         for name in zipfile.namelist():
             entries = re.findall(r'^(\d+\.\d+\.\d+\.\d+)\/(\d+),(\d+),\"?([^\"\n]+)\"?', zipfile.open(name).read(), re.MULTILINE)
-
-        for line in entries:
-            yield {'ip': line[0] + "/" + line[1], 'asn': line[2], 'autonomous_system': line[3].decode('utf-8', 'ignore')}
+            for line in entries:
+                yield {'ip': line[0] + "/" + line[1], 'asn': line[2], 'autonomous_system': line[3].decode('utf-8', 'ignore')}
 
 dispatch(ASNGenCommand, sys.argv, sys.stdin, sys.stdout, __name__)

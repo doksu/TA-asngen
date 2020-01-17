@@ -10,4 +10,13 @@
 			<type>text</type>
 		</input>
 	</block>
+
+	<block title="MaxMind License" endpoint="configs/conf-asngen" entity="maxmind">
+        	<text>Enter your MaxMind license key.</text>
+		<input field="license_key">
+			<label>license key</label>
+			<type>text</type>
+		</input>
+	</block>
+
 </setup>

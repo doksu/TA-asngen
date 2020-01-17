@@ -17,6 +17,7 @@ class ASNGenCommand(GeneratingCommand):
     def generate(self):
 
         proxies = {'http': None, 'https': None}
+        maxmind = {'license_key': None}
 
         try:
             configparser = ConfigParser.ConfigParser()
@@ -27,18 +28,30 @@ class ASNGenCommand(GeneratingCommand):
                     if len(configparser.get('proxies', 'https')) > 0:
                         proxies['https'] = configparser.get('proxies', 'https')
 
+            if configparser.has_section('maxmind'):
+                if configparser.has_option('maxmind', 'license_key'):
+                    if len(configparser.get('maxmind', 'license_key')) > 0:
+                        maxmind['license_key'] = configparser.get('maxmind', 'license_key')
+
         except:
-            pass
+            raise Exception("Error reading configuration. Please check your local asngen.conf file.")
 
         if proxies['https'] is not None:
             proxy = urllib2.ProxyHandler(proxies)
             opener = urllib2.build_opener(proxy)
             urllib2.install_opener(opener)
 
+        if maxmind['license_key'] is None:
+            raise Exception("maxmind license_key is required")
+
         try:
-            url = urllib2.urlopen("https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN-CSV.zip")
+            link = "https://download.maxmind.com/app/geoip_download" + "?"
+            link += "edition_id=GeoLite2-ASN-CSV" + "&"
+            link += "license_key=" + maxmind['license_key'] + "&"
+            link += "suffix=zip"
+            url = urllib2.urlopen(link)
         except:
-            raise Exception("Please check app proxy settings")
+            raise Exception("Please check app proxy settings and license_key.")
 
         if url.getcode()==200:
             try:

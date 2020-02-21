@@ -21,7 +21,10 @@ class ASNGenCommand(GeneratingCommand):
 
         try:
             configparser = ConfigParser.ConfigParser()
-            configparser.read(os.path.join(os.environ['SPLUNK_HOME'], 'etc/apps/TA-asngen/local/asngen.conf'))
+            # first try to read the defaults (in case we are in a cluster with deployed config)
+            configparser.read(os.path.join(os.getcwd(), '../default/asngen.conf'))
+            # then try to read the overrides
+            configparser.read(os.path.join(os.getcwd(), '../local/asngen.conf'))
 
             if configparser.has_section('proxies'):
                 if configparser.has_option('proxies', 'https'):

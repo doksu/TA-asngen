@@ -48,7 +48,9 @@ class ASNGenCommand(GeneratingCommand):
 
         if proxies['https'] is not None:
             proxy = urllib_functions.ProxyHandler(proxies)
-            opener = urllib_functions.build_opener(proxy)
+            auth = urllib_functions.HTTPBasicAuthHandler()
+            httphandler = urllib_functions.HTTPHandler()
+            opener = urllib_functions.build_opener(proxy, auth, httphandler)
             urllib_functions.install_opener(opener)
 
         if maxmind['license_key'] is None:

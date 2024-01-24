@@ -15,7 +15,6 @@
 from __future__ import absolute_import
 import sys
 
-from io import TextIOWrapper, TextIOBase
 from splunklib.six import ensure_str
 from .event import ET
 
@@ -78,10 +77,11 @@ class EventWriter(object):
 
         :param document: An ``ElementTree`` object.
         """
-        self._out.write(ensure_str(ET.tostring(document)))
+        self._out.write(ensure_str(ET.tostring(document), errors="replace"))
         self._out.flush()
 
     def close(self):
         """Write the closing </stream> tag to make this XML well formed."""
-        self._out.write("</stream>")
+        if self.header_written:
+          self._out.write("</stream>")
         self._out.flush()

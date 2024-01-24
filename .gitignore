@@ -1,2 +1,11 @@
 *.pyc
 local
+local.meta
+.DS_Store
+
+docker-compose.yml
+.dockerignore
+.tar.gz
+
+output/
+local/

@@ -1,83 +1,83 @@
-#!/usr/bin/env python
-
-from splunklib.searchcommands import dispatch, GeneratingCommand, Configuration, Option, validators
-import sys
-import os
-try:
-    # python2
-    import ConfigParser as configparser
-    from StringIO import StringIO as BytesIO
-    import urllib2 as urllib_functions
-except:
-    # python3
-    import configparser
-    from io import BytesIO
-    import urllib.request as urllib_functions
+import sys,os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
+from splunklib.searchcommands import GeneratingCommand, Option, validators
+from splunklib.searchcommands import Configuration, dispatch
+import base64
+import json
+import configparser
+import urllib.request
+from io import BytesIO
 from zipfile import ZipFile
 import re
-import socket
-import struct
+import splunk.entity as entity
 
-@Configuration(type='reporting')
-class ASNGenCommand(GeneratingCommand):
+@Configuration()
+class ASNCommand(GeneratingCommand):
 
     def generate(self):
-
         proxies = {'http': None, 'https': None}
-        maxmind = {'license_key': None}
-
+        license_key = None
         try:
-            config = configparser.ConfigParser()
-            # first try to read the defaults (in case we are in a cluster with deployed config)
-            config.read(os.path.join(os.getcwd(), '../default/asngen.conf'))
-            # then try to read the overrides
-            config.read(os.path.join(os.getcwd(), '../local/asngen.conf'))
-
-            if config.has_section('proxies'):
-                if config.has_option('proxies', 'https'):
-                    if len(config.get('proxies', 'https')) > 0:
-                        proxies['https'] = config.get('proxies', 'https')
-
-            if config.has_section('maxmind'):
-                if config.has_option('maxmind', 'license_key'):
-                    if len(config.get('maxmind', 'license_key')) > 0:
-                        maxmind['license_key'] = config.get('maxmind', 'license_key')
-
+            config_parser = configparser.ConfigParser()
+            config_parser.read(os.path.join(os.path.dirname(__file__), "..", "local", "asn.conf"))
+            self.get_proxies(config_parser, proxies)
+            session_key = self._metadata.searchinfo.session_key
+            license_key = self.get_license_key(session_key)
         except:
-            raise Exception("Error reading configuration. Please check your local asngen.conf file.")
+            raise Exception("Error: Reading configuration file. Retry setting up the application or check asn.conf")
+        if proxies['https'] is not None and proxies['https'] != 'undefined':
+            urllib_proxies = urllib.request.ProxyHandler(proxies)
+            opener = urllib.request.build_opener(urllib_proxies)
+            urllib.request.install_opener(opener)
 
-        if proxies['https'] is not None:
-            proxy = urllib_functions.ProxyHandler(proxies)
-            opener = urllib_functions.build_opener(proxy)
-            urllib_functions.install_opener(opener)
-
-        if maxmind['license_key'] is None:
-            raise Exception("maxmind license_key is required")
+        if license_key is None:
+            raise Exception("Error: Please provide a Maxmind license key.")
 
         try:
             link = "https://download.maxmind.com/app/geoip_download" + "?"
             link += "edition_id=GeoLite2-ASN-CSV" + "&"
-            link += "license_key=" + maxmind['license_key'] + "&"
+            link += "license_key=" + license_key + "&"
             link += "suffix=zip"
-            url = urllib_functions.urlopen(link)
-        except:
-            raise Exception("Please check app proxy settings and license_key.")
-
-        if url.getcode()==200:
+            url = urllib.request.urlopen(link)
+            
+        except Exception as e:
+            raise e
+            #raise Exception("Error: Please check the app configurations under asn.conf. Couldn't connect to MaxMind")
+                
+        if url.getcode() == 200:
             try:
                 zipfile = ZipFile(BytesIO(url.read()))
             except:
-                raise Exception("Invalid zip file")
+                raise Exception("Error: No Zip file found or invalid file.")
         else:
-            raise Exception("Received response: " + url.getcode())
-
+            raise Exception("Error: {}".format(url.getcode()))
+        
         for name in zipfile.namelist():
             entries = re.findall(b'^(\d+\.\d+\.\d+\.\d+)\/(\d+),(\d+),\"?([^\"\n]+)\"?', zipfile.open(name).read(), re.MULTILINE)
             for line in entries:
-                yield {
-                    'ip': line[0].decode('utf-8', 'ignore') + "/" + 
-                          line[1].decode('utf-8', 'ignore'),
-                    'asn': line[2].decode('utf-8', 'ignore'),
-                    'autonomous_system': line[3].decode('utf-8', 'ignore')}
+                yield {'ip': line[0].decode("utf-8") + "/" + line[1].decode("utf-8"), 'asn': line[2].decode("utf-8"), 'autonomous_system': str(line[3].decode('utf-8', 'ignore'))}
 
-dispatch(ASNGenCommand, sys.argv, sys.stdin, sys.stdout, __name__)
+    def get_proxies(self, config_parser, proxies):
+        """Retrieve appropriate proxies if they exist"""
+        if config_parser.has_section('proxies'):
+                if config_parser.has_option('proxies', 'https'):
+                    if len(config_parser.get('proxies', 'https')) > 0:
+                        proxies['https'] = config_parser.get('proxies', 'https')
+
+    def get_license_key(self, session_key):
+        myapp = "TA-asngen"
+        try:
+            entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
+                                        owner='admin', sessionKey=session_key)
+        except Exception as e:
+            raise Exception("Could not get %s credentials from splunk. Error: %s"
+                            % (myapp, str(e)))                  
+        for i, c in entities.items():
+            if c['username'] == 'TA-asngen_admin':
+                return c['clear_password']
+        raise Exception("API Key is not found.")                
+        
+                
+
+if __name__ == "__main__":
+    dispatch(ASNCommand, sys.argv, sys.stdin, sys.stdout, __name__)

@@ -9,7 +9,9 @@ import urllib.request
 from io import BytesIO
 from zipfile import ZipFile
 import re
-import splunk.entity as entity
+
+SECRET_REALM = 'TA-asngen_realm'
+SECRET_NAME = 'TA-asngen_admin'
 
 @Configuration()
 class ASNCommand(GeneratingCommand):
@@ -21,8 +23,7 @@ class ASNCommand(GeneratingCommand):
             config_parser = configparser.ConfigParser()
             config_parser.read(os.path.join(os.path.dirname(__file__), "..", "local", "asn.conf"))
             self.get_proxies(config_parser, proxies)
-            session_key = self._metadata.searchinfo.session_key
-            license_key = self.get_license_key(session_key)
+            license_key = self.get_license_key()
         except:
             raise Exception("Error: Reading configuration file. Retry setting up the application or check asn.conf")
         if proxies['https'] is not None and proxies['https'] != 'undefined':
@@ -63,19 +64,10 @@ class ASNCommand(GeneratingCommand):
                 if config_parser.has_option('proxies', 'https'):
                     if len(config_parser.get('proxies', 'https')) > 0:
                         proxies['https'] = config_parser.get('proxies', 'https')
-
-    def get_license_key(self, session_key):
-        myapp = "TA-asngen"
-        try:
-            entities = entity.getEntities(['admin', 'passwords'], namespace=myapp,
-                                        owner='admin', sessionKey=session_key)
-        except Exception as e:
-            raise Exception("Could not get %s credentials from splunk. Error: %s"
-                            % (myapp, str(e)))                  
-        for i, c in entities.items():
-            if c['username'] == 'TA-asngen_admin':
-                return c['clear_password']
-        raise Exception("API Key is not found.")                
+    
+    def get_license_key(search_command):
+        secrets = search_command.service.storage_passwords
+        return next(secret for secret in secrets if (secret.realm == SECRET_REALM and secret.username == SECRET_NAME)).clear_password               
         
                 
 
